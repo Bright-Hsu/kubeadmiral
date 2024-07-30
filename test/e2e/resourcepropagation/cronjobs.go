@@ -17,6 +17,9 @@ limitations under the License.
 package resourcepropagation
 
 import (
+	fedtypesv1a1 "github.com/kubewharf/kubeadmiral/pkg/apis/core/v1alpha1"
+	"github.com/kubewharf/kubeadmiral/test/e2e/framework"
+	"github.com/kubewharf/kubeadmiral/test/e2e/framework/resources"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	batchv1 "k8s.io/api/batch/v1"
@@ -24,9 +27,6 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kubewharf/kubeadmiral/test/e2e/framework"
-	"github.com/kubewharf/kubeadmiral/test/e2e/framework/resources"
 )
 
 var _ = ginkgo.Describe("CronJob Propagation", func() {

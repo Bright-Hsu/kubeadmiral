@@ -35,7 +35,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	fedcorev1a1 "github.com/kubewharf/kubeadmiral/pkg/apis/core/v1alpha1"
-	controllerutil "github.com/kubewharf/kubeadmiral/pkg/controllers/util"
 	"github.com/kubewharf/kubeadmiral/test/e2e/framework"
 	"github.com/kubewharf/kubeadmiral/test/e2e/framework/policies"
 	"github.com/kubewharf/kubeadmiral/test/e2e/framework/util"
