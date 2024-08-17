@@ -34,6 +34,9 @@ import (
 	_ "github.com/kubewharf/kubeadmiral/test/e2e/schedulingprofile"
 )
 
+// TestMain is the entry point for running KubeAdmiral E2E tests.
+// It replaces the default GinkgoLogr for better formatting,
+// registers the fail handler, and runs the test specs.
 func TestMain(t *testing.T) {
 	// replace the default GinkgoLogr for better formatting
 	ginkgo.GinkgoLogr = funcr.New(func(prefix, args string) {

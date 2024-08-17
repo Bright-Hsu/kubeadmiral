@@ -23,6 +23,10 @@ import (
 	"strings"
 	"time"
 
+	fedcorev1a1 "github.com/kubewharf/kubeadmiral/pkg/apis/core/v1alpha1"
+	"github.com/kubewharf/kubeadmiral/test/e2e/framework"
+	"github.com/kubewharf/kubeadmiral/test/e2e/framework/policies"
+	"github.com/kubewharf/kubeadmiral/test/e2e/framework/util"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,11 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-
-	fedcorev1a1 "github.com/kubewharf/kubeadmiral/pkg/apis/core/v1alpha1"
-	"github.com/kubewharf/kubeadmiral/test/e2e/framework"
-	"github.com/kubewharf/kubeadmiral/test/e2e/framework/policies"
-	"github.com/kubewharf/kubeadmiral/test/e2e/framework/util"
 )
 
 var resourcePropagationTestLabel = ginkgo.Label("resource-propagation")
@@ -252,21 +251,23 @@ func resourcePropagationTest[T k8sObject](
 				}
 				gomega.Expect(err).NotTo(gomega.HaveOccurred(), framework.MessageUnexpectedError)
 
-				fedStatus := controllerutil.FederatedResource{}
+				// fedStatus := fedcorev1a1.FederatedClusterStatus{}
+				fedStatus := fedcorev1a1.CollectedStatus{}
 				err = pkgruntime.DefaultUnstructuredConverter.FromUnstructured(fedStatusUns.Object, &fedStatus)
 				gomega.Expect(err).NotTo(gomega.HaveOccurred(), framework.MessageUnexpectedError)
 
-				g.Expect(fedStatus.ClusterStatus).
+				g.Expect(fedStatus.GenericCollectedStatus.Clusters).
 					To(gomega.HaveLen(len(actualFieldByCluster)), "Collected status has wrong number of clusters")
-				for _, clusterStatus := range fedStatus.ClusterStatus {
-					actualField, exists := actualFieldByCluster[clusterStatus.ClusterName]
-					g.Expect(exists).To(gomega.BeTrue(), fmt.Sprintf("collected from unexpected cluster %s", clusterStatus.ClusterName))
-
-					collectedField, exists, err := unstructured.NestedFieldNoCopy(clusterStatus.CollectedFields, pathSegments...)
+				for _, clusterStatus := range fedStatus.GenericCollectedStatus.Clusters {
+					actualField, exists := actualFieldByCluster[clusterStatus.Cluster]
+					g.Expect(exists).To(gomega.BeTrue(), fmt.Sprintf("collected from unexpected cluster %s", clusterStatus.Cluster))
+					var fieldsMap map[string]interface{}
+					err := json.Unmarshal(clusterStatus.CollectedFields.Raw, &fieldsMap)
+					collectedField, exists, err := unstructured.NestedFieldNoCopy(fieldsMap, pathSegments...)
 					gomega.Expect(err).NotTo(gomega.HaveOccurred(), framework.MessageUnexpectedError)
 					g.Expect(exists).To(
 						gomega.BeTrue(),
-						fmt.Sprintf("collected fields does not contain %q for cluster %s", config.statusCollection.path, clusterStatus.ClusterName),
+						fmt.Sprintf("collected fields does not contain %q for cluster %s", config.statusCollection.path, clusterStatus.Cluster),
 					)
 					g.Expect(collectedField).To(gomega.Equal(actualField), "collected and actual fields differ")
 				}

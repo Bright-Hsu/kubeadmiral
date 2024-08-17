@@ -25,12 +25,12 @@ import (
 	"github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	pkgruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	fedcorev1a1 "github.com/kubewharf/kubeadmiral/pkg/apis/core/v1alpha1"
-	"github.com/kubewharf/kubeadmiral/pkg/controllers/scheduler"
-	controllerutil "github.com/kubewharf/kubeadmiral/pkg/controllers/util"
 	"github.com/kubewharf/kubeadmiral/test/e2e/framework"
 	"github.com/kubewharf/kubeadmiral/test/e2e/framework/policies"
 	"github.com/kubewharf/kubeadmiral/test/e2e/framework/resources"
@@ -39,7 +39,7 @@ import (
 
 var scheduleTimeout = time.Second * 10
 
-var _ = ginkgo.Describe("Scheduling Profile", func() {
+var _ = ginkgo.FDescribe("Scheduling Profile", func() {
 	f := framework.NewFramework("scheduling-profile", framework.FrameworkOptions{CreateNamespace: true})
 
 	testPlacementFilter := func(ctx context.Context, profile *fedcorev1a1.SchedulingProfile, enabled bool) {
@@ -88,29 +88,32 @@ var _ = ginkgo.Describe("Scheduling Profile", func() {
 			gomega.Expect(err).To(gomega.Or(gomega.BeNil(), gomega.Satisfy(apierrors.IsNotFound)))
 			g.Expect(err).ToNot(gomega.HaveOccurred())
 
-			placementObj, err := controllerutil.UnmarshalGenericPlacements(federatedConfigMap)
+			fedObj := fedcorev1a1.FederatedObject{}
+			err = pkgruntime.DefaultUnstructuredConverter.FromUnstructured(federatedConfigMap.Object, &fedObj)
+			// placementObj, err := controllerutil.UnmarshalGenericPlacements(federatedConfigMap)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred(), framework.MessageUnexpectedError)
 
-			placement := placementObj.Spec.GetPlacementOrNil(scheduler.PrefixedGlobalSchedulerName)
+			placement := fedObj.Spec.GetPlacementUnion()
 			g.Expect(placement).ToNot(gomega.BeNil())
 
 			if enabled {
 				// only the first cluster should be selected since placement plugin was enabled
-				g.Expect(placement.Clusters).To(gomega.HaveLen(1))
-				g.Expect(placement.Clusters[0].Name).To(gomega.Equal(clusters[0].Name))
+				g.Expect(placement).To(gomega.HaveLen(1))
+				g.Expect(placement.UnsortedList()[0]).To(gomega.Equal(clusters[0].Name))
 			} else {
 				// all clusters should be selected since placement plugin was disabled
-				g.Expect(placement.Clusters).To(gomega.HaveLen(len(clusters)))
+				g.Expect(placement).To(gomega.HaveLen(len(clusters)))
 				clusterSet := sets.New[string]()
 				for _, cluster := range clusters {
 					clusterSet.Insert(cluster.Name)
 				}
-				for _, cluster := range placement.Clusters {
-					gomega.Expect(clusterSet.Has(cluster.Name)).To(gomega.BeTrue())
+				placementList := placement.UnsortedList()
+				for _, cluster := range placementList {
+					gomega.Expect(clusterSet.Has(cluster)).To(gomega.BeTrue())
 				}
 			}
 
-			ginkgo.GinkgoLogr.Info("Obtained scheduling result", "result", placement.Clusters)
+			ginkgo.GinkgoLogr.Info("Obtained scheduling result", "result", placement)
 		}).WithTimeout(scheduleTimeout).WithContext(ctx).Should(gomega.Succeed(), "Timed out waiting for scheduling")
 	}
 

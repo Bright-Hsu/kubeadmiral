@@ -12,7 +12,7 @@ DEBUG_TARGET_NAME ?= $(TARGET_NAME)_debug
 # image information
 REGISTRY ?= ghcr.io/kubewharf
 TAG ?= latest
-REGION ?=
+REGION = cn
 
 ifeq (${REGION}, cn)
 GOPROXY := https://goproxy.cn,direct
