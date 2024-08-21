@@ -118,8 +118,8 @@ else
 fi
 
 # 3. Make image for kubeadmiral-controller-manager and load it to kind cluster
-echo "Making a docker image using local kubeadmiral code..."
-make images ARCHS=${BS_ARCH} TAG="latest" REGISTRY="ghcr.io/kubewharf" REGION=${REGION} GOPROXY=${GOPROXY}
+# echo "Making a docker image using local kubeadmiral code..."
+# make images ARCHS=${BS_ARCH} TAG="latest" REGISTRY="ghcr.io/kubewharf" REGION=${REGION} GOPROXY=${GOPROXY}
 
 echo "Waiting for the meta cluster to be ready..."
 util::check_clusters_ready "${META_CLUSTER_KUBECONFIG}" "${META_CLUSTER_NAME}"
